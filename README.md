@@ -1,36 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# V-ULPIN · 3D Vertical Property Mapping
 
-## Getting Started
+Interactive 3D cadastre prototype for the SIH26011 Pune Ward 8 pilot. It includes a Cesium digital twin, V-ULPIN generation, unit inspection, topology audits, and a seeded two-tower inventory.
 
-First, run the development server:
+## Run the Demo
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). Cesium runtime assets are copied to `public/cesium` by the install hook. The web app's built-in demo API works without a database or GIS server.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The pilot contains Tower A (G+10, two basements) and Tower B (G+6, one basement), with residential, commercial, parking, and utility spaces. Demo owner labels and RERA links are simulated.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## FastAPI Service
 
-## Learn More
+Use Python 3.11 or newer:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+python3.11 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r backend/requirements.txt
+python -m backend.setup_demo
+uvicorn backend.main:app --reload --port 8000
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+To route the dashboard to FastAPI instead of the built-in Next demo API, set `NEXT_PUBLIC_VULPIN_API_URL=http://localhost:8000` before starting Next.js. The FastAPI service runs in memory if `DATABASE_URL` is unset.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## PostGIS Mode
 
-## Deploy on Vercel
+Set `DATABASE_URL` to an async PostgreSQL URL, for example:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```text
+postgresql+asyncpg://vulpin:change-me@localhost:5432/vulpin
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The database must have PostGIS and SFCGAL installed. Startup enables `postgis` and `postgis_sfcgal`; `python -m backend.setup_demo` creates the schema and inserts the seed inventory. 3D topology work uses projected metric EPSG:32643 coordinates. The demo vertical heights are synthetic and are not a surveyed geodetic control network.
+
+## Prototype Boundaries
+
+- The standalone Next API uses axis-aligned simulated footprints for fast offline demos. Use FastAPI/PostGIS for projected geometry and SFCGAL volume checks against production survey inputs.
+- RERA/carpet-area and ownership fields are illustrative only. No generated record is a government-issued ULPIN, title document, or legal land certificate.
+- The “Land certificate” action opens the browser print dialog for a clearly labeled preview; it does not issue a registered certificate.
+- Do not put owner PII or deed documents into public 3D Tiles metadata.
+
+See [backend/requirements.txt](backend/requirements.txt) for the API runtime dependencies.
